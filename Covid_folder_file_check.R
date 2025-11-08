@@ -2,7 +2,6 @@
 library(DBI)
 library(odbc)
 
-#change to test git
 
 ##################################################################################
 ##### Connect to SQL Server and Database  ########################################
