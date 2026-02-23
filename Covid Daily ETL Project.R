@@ -8,7 +8,7 @@
 # install.packages("stringr")
 # install.packages("tidyr") # For drop_na and other tidying functions
 
-#change to test git
+
 # Load all required libraries at the beginning
 library(DBI)
 library(odbc)
@@ -92,37 +92,37 @@ tryCatch({
     
   } 
   else 
-    {
+  {
     message(paste("Processing files in:", file_path))
     
     files_to_process <- fs::dir_ls(file_path, type = "file")
     
     if (length(files_to_process) == 0) 
-      {
+    {
       message("No Excel files found in the Health Roster import directory.")
       
     } 
     else 
-      {
+    {
       for (file in files_to_process) {
         message(paste("Reading file:", fs::path_file(file)))
         
         df <- tryCatch(
           {
-          # Use read_excel with name_repair = "minimal" to preserve column names
-          read_excel(file, .name_repair = "minimal")
-        }, 
-        error = function(e) 
+            # Use read_excel with name_repair = "minimal" to preserve column names
+            read_excel(file, .name_repair = "minimal")
+          }, 
+          error = function(e) 
           {
-          message(paste("Error reading Excel file", fs::path_file(file), ":", e$message))
-          return(NULL) # Return NULL if reading fails
-        })
+            message(paste("Error reading Excel file", fs::path_file(file), ":", e$message))
+            return(NULL) # Return NULL if reading fails
+          })
         
         if (!is.null(df)) 
-          {
+        {
           # Check if 'Report Date' column exists
           if (!"Report Date" %in% names(df)) 
-            {
+          {
             # If 'Report Date' column is missing, save as CSV with original filename
             original_filename_no_ext <- fs::path_ext_remove(fs::path_file(file))
             new_csv_filename <- paste0(original_filename_no_ext, ".csv")
@@ -130,63 +130,63 @@ tryCatch({
             
             tryCatch(
               {
-              readr::write_csv(df, output_path_no_report_date)
-              message(paste("File '", fs::path_file(file), "' has no 'Report Date' column. Saved as '", new_csv_filename, "' in export folder.", sep = ""))
-            }, 
-            error = function(e) 
+                readr::write_csv(df, output_path_no_report_date)
+                message(paste("File '", fs::path_file(file), "' has no 'Report Date' column. Saved as '", new_csv_filename, "' in export folder.", sep = ""))
+              }, 
+              error = function(e) 
               {
-              message(paste("Error saving file '", fs::path_file(file), "' without 'Report Date' column:", e$message))
-            })
+                message(paste("Error saving file '", fs::path_file(file), "' without 'Report Date' column:", e$message))
+              })
             
           }
           else 
-            {
+          {
             # Convert 'Report Date' to a proper date format if it isn't already
             df <- df %>%
               mutate(`Report Date` = as_date(`Report Date`))
             
             tryCatch(
               {
-              list_of_dfs <- df %>%
-                group_by(`Report Date`) %>%
-                group_split()
-              
-              for (new_df in list_of_dfs) 
+                list_of_dfs <- df %>%
+                  group_by(`Report Date`) %>%
+                  group_split()
+                
+                for (new_df in list_of_dfs) 
                 {
-                file_date <- unique(new_df$`Report Date`)[1]
-                
-                if (is.na(file_date)) 
+                  file_date <- unique(new_df$`Report Date`)[1]
+                  
+                  if (is.na(file_date)) 
                   {
-                  message(paste("Skipping export for a group with missing or invalid 'Report Date' in file:", fs::path_file(file)))
-                  next # Skip to the next iteration of the loop
+                    message(paste("Skipping export for a group with missing or invalid 'Report Date' in file:", fs::path_file(file)))
+                    next # Skip to the next iteration of the loop
+                  }
+                  
+                  file_date_formatted <- format(file_date, "%Y-%m-%d")
+                  file_name <- paste0("Heath_Roster - ", file_date_formatted, ".csv")
+                  output_path <- fs::path(export_path, file_name)
+                  
+                  write.csv(new_df, output_path, row.names = FALSE)
+                  message(paste("Exported:", file_name))
                 }
+                message("Files Exported.")
                 
-                file_date_formatted <- format(file_date, "%Y-%m-%d")
-                file_name <- paste0("Heath_Roster - ", file_date_formatted, ".csv")
-                output_path <- fs::path(export_path, file_name)
-                
-                write.csv(new_df, output_path, row.names = FALSE)
-                message(paste("Exported:", file_name))
-              }
-              message("Files Exported.")
-              
-            }, error = function(e) 
+              }, error = function(e) 
               {
-              message(paste("Error during data processing and export for file", fs::path_file(file), ":", e$message))
-            })
+                message(paste("Error during data processing and export for file", fs::path_file(file), ":", e$message))
+              })
           }
           
           # Move the processed file to the received data folder
           destination_file <- fs::path(move_path, fs::path_file(file))
           tryCatch(
             {
-            fs::file_move(file, destination_file)
-            message(paste("Moved file '", fs::path_file(file), "' to '", move_path, "'", sep = ""))
-          }, 
-          error = function(e) 
+              fs::file_move(file, destination_file)
+              message(paste("Moved file '", fs::path_file(file), "' to '", move_path, "'", sep = ""))
+            }, 
+            error = function(e) 
             {
-            message(paste("Error moving file", fs::path_file(file), ":", e$message))
-          })
+              message(paste("Error moving file", fs::path_file(file), ":", e$message))
+            })
         }
       }
     }
@@ -426,27 +426,27 @@ validate_file_columns <- function(file_path, file_type) {
 ##################################################################################################################
 
 extract_data <- function(file_path, move_destination_path)
-  {
+{
   if (is.null(file_path) || !fs::file_exists(file_path)) 
-    {
+  {
     message(paste("File not found or path is NULL:", file_path))
     return(NULL)
   }
   data <- NULL
   tryCatch(
     {
-    data <- readr::read_csv(file_path, show_col_types = FALSE) # Read CSV
-    message(paste("Successfully read:", fs::path_file(file_path)))
-    
-    # Move the file
-    destination_file <- fs::path(move_destination_path, fs::path_file(file_path))
-    fs::file_move(file_path, destination_file)
-    message(paste("Moved file '", fs::path_file(file_path), "' to '", move_destination_path, "'", sep = ""))
-  }, 
-  error = function(e) 
+      data <- readr::read_csv(file_path, show_col_types = FALSE) # Read CSV
+      message(paste("Successfully read:", fs::path_file(file_path)))
+      
+      # Move the file
+      destination_file <- fs::path(move_destination_path, fs::path_file(file_path))
+      fs::file_move(file_path, destination_file)
+      message(paste("Moved file '", fs::path_file(file_path), "' to '", move_destination_path, "'", sep = ""))
+    }, 
+    error = function(e) 
     {
-    message(paste("Error extracting/moving file", fs::path_file(file_path), ":", e$message))
-  }
+      message(paste("Error extracting/moving file", fs::path_file(file_path), ":", e$message))
+    }
   )
   return(data)
 }
@@ -456,16 +456,16 @@ extract_data <- function(file_path, move_destination_path)
 ###################################################################################################################
 
 transform_org <- function(data) 
-  {
+{
   if (is.null(data)) return(NULL)
   data <- data %>%
     #drop_na(everything()) %>% # Drop rows where all columns are NA
     mutate(
       `Absence Start Date` = lubridate::as_date(lubridate::dmy_hm(`Absence Start Date`)), # Coerce errors
       `Absence End Date` = dplyr::case_when( 
-            stringr::str_detect(`Absence End Date`, "4712") ~ as.Date(NA),
-            TRUE ~ lubridate::as_date(lubridate::dmy_hm(`Absence End Date`))
-          )# Coerce errors
+        stringr::str_detect(`Absence End Date`, "4712") ~ as.Date(NA),
+        TRUE ~ lubridate::as_date(lubridate::dmy_hm(`Absence End Date`))
+      )# Coerce errors
     ) %>%
     rename(`DH Monitoring` = `Related Reason`) # Rename column
   return(data)
@@ -475,7 +475,7 @@ transform_org <- function(data)
 
 
 transform_med <- function(data) 
-  {
+{
   if (is.null(data)) return(NULL)
   data <- data %>%
     #drop_na(everything()) %>% # Drop rows where all columns are NA
@@ -502,14 +502,14 @@ transform_health <- function(data) {
     "Hours In Period (hh:mm)", "State", "Hours In Period", "Total Duration", "Department",
     "Last Note", "Requested Date", "Lead Time", "Is Open Ended"
   )
-
+  
   # Check if any required columns are missing and print a message.
   missing_cols <- setdiff(required_cols, names(data))
   if (length(missing_cols) > 0) {
     message("Warning: The following columns are missing from the data and will be ignored:")
     message(paste(missing_cols, collapse = ", "))
   }
-
+  
   
   data <- data %>%
     #drop_na(everything()) %>% # Drop rows where all columns are NA
@@ -522,14 +522,14 @@ transform_health <- function(data) {
       # Clean and convert the 'Hours In Period (hh:mm)' column to ensure it's in a valid HH:MM:SS format
       # or replaced with NA for NULL values.
       `Hours In Period (hh:mm)` = dplyr::case_when(
-               # Handle NA values first
-               is.na(`Hours In Period (hh:mm)`) ~ as.character(NA),
-               # If it's already in HH:MM:SS format, keep it as is
-               stringr::str_detect(`Hours In Period (hh:mm)`, "^\\d{1,2}:\\d{2}:\\d{2}$") ~ as.character(`Hours In Period (hh:mm)`),
-               # If it's in HH:MM format, append ":00"
-               stringr::str_detect(`Hours In Period (hh:mm)`, "^\\d{1,2}:\\d{2}$") ~ paste0(`Hours In Period (hh:mm)`, ":00"),
-               # For any other format, return NA
-               TRUE ~ as.character(NA)
+        # Handle NA values first
+        is.na(`Hours In Period (hh:mm)`) ~ as.character(NA),
+        # If it's already in HH:MM:SS format, keep it as is
+        stringr::str_detect(`Hours In Period (hh:mm)`, "^\\d{1,2}:\\d{2}:\\d{2}$") ~ as.character(`Hours In Period (hh:mm)`),
+        # If it's in HH:MM format, append ":00"
+        stringr::str_detect(`Hours In Period (hh:mm)`, "^\\d{1,2}:\\d{2}$") ~ paste0(`Hours In Period (hh:mm)`, ":00"),
+        # For any other format, return NA
+        TRUE ~ as.character(NA)
       ),
       'MB Flag' = NA_character_ # Add MB Flag column with NA values (character type)
     )
@@ -544,14 +544,14 @@ transform_health <- function(data) {
 #######################################################################################################
 
 load_data <- function(data, con, table_name) 
-  {
+{
   if (is.null(data) || nrow(data) == 0) 
-    {
+  {
     message(paste("No data to load for table:", table_name))
     return(FALSE)
   }
   if (!DBI::dbIsValid(con)) 
-    {
+  {
     message(paste("Error: Database connection is not valid for loading to", table_name))
     return(FALSE)
   }
@@ -565,14 +565,14 @@ load_data <- function(data, con, table_name)
       #Write data to table
       DBI::dbWriteTable(con, table_name, data, append = TRUE, row.names = FALSE)
       message(paste(table_name, "data uploaded successfully!"))
-    return(TRUE)
-  },
-  
-  error = function(e) 
+      return(TRUE)
+    },
+    
+    error = function(e) 
     {
-    message(paste(table_name, "data upload failed! Error:", e$message))
-    return(FALSE)
-  }
+      message(paste(table_name, "data upload failed! Error:", e$message))
+      return(FALSE)
+    }
   )
 }
 
@@ -588,7 +588,7 @@ load_data <- function(data, con, table_name)
 message("Starting main ETL loop...")
 
 while (!directory_is_empty(data_path_for_report_date))
-  {
+{
   message("ETL Cycle")
   
   #################################################################
@@ -601,12 +601,12 @@ while (!directory_is_empty(data_path_for_report_date))
   filenames_for_date_extraction <- character(0)
   files_in_etl_dir <- fs::dir_ls(data_path_for_report_date, type = "file")
   
-
+  
   
   for (file_in_etl_dir in files_in_etl_dir) {
     file_name_etl <- fs::path_file(file_in_etl_dir)
     if (stringr::str_detect(file_name_etl, Org_pattern)) 
-      {
+    {
       res_etl <- stringr::str_extract(file_name_etl, "\\d{4}-\\d{2}-\\d{2}")
       if (!is.na(res_etl)) {
         filenames_for_date_extraction <- c(filenames_for_date_extraction, res_etl)
@@ -616,11 +616,11 @@ while (!directory_is_empty(data_path_for_report_date))
   }
   
   if (length(filenames_for_date_extraction) > 0) 
-    {
+  {
     current_report_date <- ymd(filenames_for_date_extraction[1])
     message(paste("Current ETL Report Date identified:", format(current_report_date, "%Y-%m-%d")))
     
-
+    
     # Update date in SQL table 'Covid19-Report-Date'
     if (!DBI::dbIsValid(con)) {
       message("Error: Database connection is not valid. Cannot update report date for ETL cycle. Breaking loop.")
@@ -640,17 +640,17 @@ while (!directory_is_empty(data_path_for_report_date))
         #Write date to SQL
         DBI::dbWriteTable(con, "Covid19-Report-Date", df_rpt_etl, append = TRUE, row.names = FALSE)
         message(paste("Report date '", format(current_report_date, "%Y-%m-%d"), "' loaded to SQL table 'Covid19-Report-Date' for current ETL cycle.", sep = ""))
-    
-        }, error = function(e) {
-      message(paste("Error writing report date to SQL for ETL cycle:", e$message))
-      message("Breaking ETL loop due to SQL write error.")
-      break # Exit loop if SQL write fails
-    }
+        
+      }, error = function(e) {
+        message(paste("Error writing report date to SQL for ETL cycle:", e$message))
+        message("Breaking ETL loop due to SQL write error.")
+        break # Exit loop if SQL write fails
+      }
     )
     
   }
   else
-    {
+  {
     message("No valid report date found in files for this ETL cycle. Exiting loop.")
     break # Exit loop if no report date can be determined
   }
@@ -668,14 +668,14 @@ while (!directory_is_empty(data_path_for_report_date))
   
   #check if files exist in folder
   if (is.null(found_files$org) && is.null(found_files$medsus) && is.null(found_files$healthroster)) 
-    {
+  {
     message(paste("No files found for date pattern", date_pattern_for_files, ". Ending ETL loop."))
     break # Exit loop if no files for this date
   }
   
   # validate columns for each file
   if (!is.null(found_files$org)){
-      validate_file_columns(found_files$org, 'Org')
+    validate_file_columns(found_files$org, 'Org')
   }
   else {
     message("Org file column count mismatch.")
@@ -702,36 +702,36 @@ while (!directory_is_empty(data_path_for_report_date))
   
   org_data <- extract_data(found_files$org, move_path)
   if (!is.null(org_data))
-    {
+  {
     clean_org <- transform_org(org_data)
     load_data(clean_org, con, 'BI_Organisation_Absence_Import_Daily_Covid19')
   }
   else 
-    {
+  {
     message("Skipping Organisation Absence ETL due to extraction failure.")
   }
   
   # Medical Suspensions
   med_data <- extract_data(found_files$medsus, move_path)
   if (!is.null(med_data)) 
-    {
+  {
     clean_med <- transform_med(med_data)
     load_data(clean_med, con, 'BI_Medical_Suspensions_Import_Daily_Covid19')
   } 
   else 
-    {
+  {
     message("Skipping Medical Suspensions ETL due to extraction failure.")
   }
   
   # Health Roster
   hel_data <- extract_data(found_files$healthroster, move_path)
   if (!is.null(hel_data))
-    {
+  {
     clean_heal <- transform_health(hel_data)
     load_data(clean_heal, con, 'Healthroster_Absence_Import_Daily_Covid19')
   }
   else 
-    {
+  {
     message("Skipping Health Roster ETL due to extraction failure.")
   }
   
@@ -741,31 +741,31 @@ while (!directory_is_empty(data_path_for_report_date))
   
   procedure_name <- "Covid19_UpdateAll"
   if (!is.null(con) && DBI::dbIsValid(con)) 
-    {
+  {
     tryCatch(
       {
-      DBI::dbExecute(con, paste0("EXEC ", procedure_name))
-      message(paste("Stored procedure '", procedure_name, "' executed successfully!", sep = ""))
-      
-      # Check if stored procedure ran (audit log)
-      sql_audit <- "SELECT TOP 1 execution_time FROM ProcedureAudit ORDER BY execution_time DESC"
-      sp_runtime <- DBI::dbGetQuery(con, sql_audit)
-      if (nrow(sp_runtime) > 0) {
-        message(paste("Stored Procedure run at:", sp_runtime$execution_time[1]))
-      } 
-      else
+        DBI::dbExecute(con, paste0("EXEC ", procedure_name))
+        message(paste("Stored procedure '", procedure_name, "' executed successfully!", sep = ""))
+        
+        # Check if stored procedure ran (audit log)
+        sql_audit <- "SELECT TOP 1 execution_time FROM ProcedureAudit ORDER BY execution_time DESC"
+        sp_runtime <- DBI::dbGetQuery(con, sql_audit)
+        if (nrow(sp_runtime) > 0) {
+          message(paste("Stored Procedure run at:", sp_runtime$execution_time[1]))
+        } 
+        else
         {
-        message("Could not retrieve stored procedure audit time.")
-      }
-    },
-    error = function(e) 
+          message("Could not retrieve stored procedure audit time.")
+        }
+      },
+      error = function(e) 
       {
-      message(paste("Error executing stored procedure '", procedure_name, "':", e$message, sep = ""))
-    }
+        message(paste("Error executing stored procedure '", procedure_name, "':", e$message, sep = ""))
+      }
     )
   } 
   else 
-    {
+  {
     message("Cannot execute stored procedure: Database connection is not valid.")
   }
   
@@ -781,13 +781,13 @@ message("ETL process completed or no more files to process.")
 # IMPORTANT: Ensure the database connection 'con' is closed when all operations are complete
 # in your overall script that orchestrates these parts.
 if (!is.null(con) && DBI::dbIsValid(con))
-  {
+{
   DBI::dbDisconnect(con)
   message("Database connection closed.")
 } else if(is.null(con)) 
-  {
+{
   message("No active connection to close.")
 }
 
 
-  
+
