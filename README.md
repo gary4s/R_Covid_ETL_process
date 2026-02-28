@@ -26,14 +26,21 @@ Scalable architecture ready for cloud orchestration in future
 
 Input Files → File‑Checker → Validation Layer → Transformation Layer → SQL Staging Load → Logging
 ## Components:
-  File‑Checker: Ensures all required files are present and valid
-  Validation Layer: Schema checks, row counts, data‑type enforcement
-  Transformation Layer: Cleans, standardises, and maps data
-  SQL Load: Writes to staging tables and triggers stored procedures
-  Logging: Captures run history, errors, and data quality metrics
+File‑Checker: Ensures all required files are present and valid
+
+Validation Layer: Schema checks, row counts, data‑type enforcement
+
+Transformation Layer: Cleans, standardises, and maps data
+
+SQL Load: Writes to staging tables and triggers stored procedures
+
+Logging: Captures run history, errors, and data quality metrics
 
 # Technologies Used
   R – ingestion, validation, transformation
+  
   SQL Server – storage, business logic
+  
   Windows Task Scheduler – automation
+  
   Power BI – downstream reporting (not part of this repo but supported by outputs)
